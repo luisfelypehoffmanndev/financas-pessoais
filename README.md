@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Finanças Pessoais
 
-## Getting Started
+Aplicação full-stack de controle financeiro pessoal feita com **Next.js (App Router)** e **PostgreSQL**.
 
-First, run the development server:
+- **Dashboard:** saldo atual, total de receitas e total de despesas (calculados no banco pela view `transaction_summary`).
+- **Nova transação:** descrição, valor, tipo (Receita/Despesa) e data, com validação no servidor.
+- **Histórico:** lista em ordem cronológica (mais recentes primeiro), com cores e ícones para diferenciar entradas de saídas, e opção de excluir.
+
+## Como rodar
+
+Pré-requisitos: Node.js 20+ e PostgreSQL.
 
 ```bash
+npm install
+
+# 1. Crie o banco (exemplo com Postgres local)
+createdb financas
+
+# 2. Configure a conexão
+cp .env.example .env.local   # edite DATABASE_URL
+
+# 3. Crie as tabelas
+export $(cat .env.local | xargs) && npm run db:setup
+
+# 4. Suba o app
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Arquitetura
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+app/
+  page.tsx        Server Component: lê resumo + transações do banco em paralelo
+  actions.ts      Server Actions: createTransaction / deleteTransaction
+  loading.tsx     Skeleton exibido durante o carregamento (Suspense)
+  error.tsx       Error boundary (Client Component)
+components/
+  SummaryCards    Server Component – cards do dashboard
+  TransactionList Server Component – histórico
+  TransactionForm Client Component – useActionState + useFormStatus
+  DeleteButton    Client Component – Server Action com .bind(id)
+lib/
+  db.ts           Conexão (postgres.js), marcada como server-only
+  transactions.ts Consultas SQL parametrizadas
+  validation.ts   Schemas zod
+db/schema.sql     Tabela, índice e view de resumo
+```
 
-## Learn More
+### Decisões
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Server Components por padrão.** A leitura do banco acontece no servidor, sem API intermediária e sem enviar a string de conexão ao navegador (`import "server-only"` impede que `lib/db.ts` seja importado no cliente).
+- **Client Components só onde há interatividade:** o formulário (estado de envio e erros) e o botão de excluir.
+- **Server Actions para mutações.** O formulário chama `createTransaction` direto pelo atributo `action`. A action valida com zod, insere no banco e chama `revalidatePath("/")`, então o dashboard e o histórico se atualizam sem recarregar a página. O formulário funciona mesmo com JavaScript desabilitado (progressive enhancement).
+- **Segurança:** as queries usam tagged templates do postgres.js, que são parametrizados (sem SQL injection). A validação acontece no servidor e o banco reforça com `CHECK` (valor > 0, tamanho da descrição).
+- **Valores monetários** são `numeric(12,2)` no banco, nunca `float`.
