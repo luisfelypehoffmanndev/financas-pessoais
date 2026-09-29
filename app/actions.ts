@@ -22,6 +22,7 @@ export async function createTransaction(_prev: FormState, formData: FormData): P
     amount: String(formData.get("amount") ?? ""),
     type: String(formData.get("type") ?? ""),
     occurredOn: String(formData.get("occurredOn") ?? ""),
+    isRecurring: formData.get("isRecurring") === "on" ? "on" : undefined,
   };
 
   const parsed = transactionSchema.safeParse(raw);

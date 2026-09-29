@@ -4,9 +4,16 @@ import type { Summary, Transaction, TransactionType } from "./types";
 
 export async function getTransactions(): Promise<Transaction[]> {
   const rows = await db()<
-    { id: string; description: string; amount: string; type: TransactionType; occurred_on: string }[]
+    {
+      id: string;
+      description: string;
+      amount: string;
+      type: TransactionType;
+      occurred_on: string;
+      is_recurring: boolean;
+    }[]
   >`
-    select id, description, amount, type, to_char(occurred_on, 'YYYY-MM-DD') as occurred_on
+    select id, description, amount, type, to_char(occurred_on, 'YYYY-MM-DD') as occurred_on, is_recurring
     from transactions
     order by occurred_on desc, created_at desc
   `;
@@ -17,6 +24,7 @@ export async function getTransactions(): Promise<Transaction[]> {
     amount: Number(row.amount),
     type: row.type,
     occurredOn: row.occurred_on,
+    isRecurring: Boolean(row.is_recurring),
   }));
 }
 
@@ -34,8 +42,8 @@ export async function getSummary(): Promise<Summary> {
 
 export async function insertTransaction(input: Omit<Transaction, "id">) {
   await db()`
-    insert into transactions (description, amount, type, occurred_on)
-    values (${input.description}, ${input.amount}, ${input.type}, ${input.occurredOn})
+    insert into transactions (description, amount, type, occurred_on, is_recurring)
+    values (${input.description}, ${input.amount}, ${input.type}, ${input.occurredOn}, ${input.isRecurring})
   `;
 }
 

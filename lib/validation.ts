@@ -37,6 +37,9 @@ export const transactionSchema = z.object({
       return cleaned;
     })
     .pipe(z.iso.date("Data inválida.")),
+  isRecurring: z
+    .preprocess((val) => val === "on" || val === "true" || val === true, z.boolean())
+    .default(false),
 });
 
 export const idSchema = z.uuid();

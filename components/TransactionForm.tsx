@@ -11,6 +11,7 @@ import {
   FileText,
   Loader2,
   Plus,
+  Repeat,
 } from "lucide-react";
 import { createTransaction, type FormState } from "@/app/actions";
 
@@ -21,6 +22,9 @@ export function TransactionForm({ today }: { today: string }) {
   const values = state.values ?? {};
   const errors = state.errors ?? {};
   const [dateValue, setDateValue] = useState(values.occurredOn ?? today);
+  const [currentType, setCurrentType] = useState<"income" | "expense">(
+    (values.type as "income" | "expense") ?? "income"
+  );
 
   function handleDateChange(e: React.ChangeEvent<HTMLInputElement>) {
     let v = e.target.value.replace(/\D/g, "");
@@ -60,12 +64,14 @@ export function TransactionForm({ today }: { today: string }) {
               label="Receita"
               icon={<ArrowUpRight className="size-4" />}
               defaultChecked={(values.type ?? "income") === "income"}
+              onChange={() => setCurrentType("income")}
             />
             <TypeOption
               value="expense"
               label="Despesa"
               icon={<ArrowDownRight className="size-4" />}
               defaultChecked={values.type === "expense"}
+              onChange={() => setCurrentType("expense")}
             />
           </div>
           <FieldError messages={errors.type} />
@@ -133,6 +139,22 @@ export function TransactionForm({ today }: { today: string }) {
             </div>
           </Field>
         </div>
+
+        {/* Recorrência (Fixa) */}
+        <label className="flex items-center gap-3 cursor-pointer select-none rounded-xl border border-slate-200/80 bg-slate-50/50 p-3 hover:bg-slate-100/60 dark:border-slate-800/80 dark:bg-slate-950/40 dark:hover:bg-slate-800/40 transition">
+          <input
+            type="checkbox"
+            id="isRecurring"
+            name="isRecurring"
+            defaultChecked={values.isRecurring === "on"}
+            className="size-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:focus:ring-slate-400 accent-slate-900 dark:accent-slate-100"
+          />
+          <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700 dark:text-slate-300">
+            <Repeat className="size-3.5 text-slate-400 dark:text-slate-500" />
+            <span>{currentType === "income" ? "Receita fixa" : "Despesa fixa"}</span>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500">(repete todo mês)</span>
+          </div>
+        </label>
 
         {/* Feedback Alert */}
         {state.message && (
@@ -202,11 +224,13 @@ function TypeOption({
   label,
   icon,
   defaultChecked,
+  onChange,
 }: {
   value: "income" | "expense";
   label: string;
   icon: React.ReactNode;
   defaultChecked: boolean;
+  onChange?: () => void;
 }) {
   const isIncome = value === "income";
 
@@ -217,6 +241,7 @@ function TypeOption({
         name="type"
         value={value}
         defaultChecked={defaultChecked}
+        onChange={onChange}
         className="peer sr-only"
       />
       <span

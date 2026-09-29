@@ -6,6 +6,7 @@ export type Transaction = {
   amount: number;
   type: TransactionType;
   occurredOn: string; // YYYY-MM-DD
+  isRecurring: boolean;
 };
 
 export type Summary = {

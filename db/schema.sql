@@ -14,8 +14,9 @@ create table if not exists transactions (
   description text not null check (char_length(description) between 1 and 120),
   amount      numeric(12, 2) not null check (amount > 0),
   type        transaction_type not null,
-  occurred_on date not null default current_date,
-  created_at  timestamptz not null default now()
+  occurred_on  date not null default current_date,
+  is_recurring boolean not null default false,
+  created_at   timestamptz not null default now()
 );
 
 create index if not exists transactions_chronological_idx
